@@ -1,15 +1,12 @@
-import 'dart:ui';
-
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:login_form/controllers/login_controller.dart';
 import 'package:login_form/screens/resources/home_page.dart';
 import 'package:login_form/screens/resources/sign_in_page.dart';
+
+//import facebook login
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -19,6 +16,10 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  //facebook login
+  Map<String, dynamic>? _userData;
+  String welcome = "Facebook";
+
   //login goole
   final controller = Get.put(LoginController());
 
@@ -190,7 +191,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   } else
                     return buildProfileView();
                 }),
-                
+
+                TextButton(
+                    onPressed: () {
+                      signInWithFacebook();
+                    },
+                    child: Text(welcome))
               ],
             ),
           )),
@@ -243,5 +249,28 @@ class _LoginScreenState extends State<LoginScreen> {
             })
       ],
     );
+  }
+
+  //facebook Login
+  Future<UserCredential> signInWithFacebook() async {
+    final LoginResult result =
+        await FacebookAuth.instance.login(permissions: ['email']);
+
+    if (result.status == LoginStatus.success) {
+      final userData = await FacebookAuth.instance.getUserData();
+
+      _userData = userData;
+    } else {
+      print(result.message);
+    }
+
+    setState(() {
+      welcome = _userData?['email'];
+    });
+
+    final OAuthCredential facebookAuthCredential =
+        FacebookAuthProvider.credential(result.accessToken!.token);
+
+    return FirebaseAuth.instance.signInWithCredential(facebookAuthCredential);
   }
 }
